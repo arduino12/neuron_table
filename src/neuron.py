@@ -21,7 +21,7 @@ class ControlsWindow(Toplevel):
 
     WINDOW_TITLE = 'Neuron V1.0.0'
     RES_PATH = BASIC_PATH / 'res'
-    IMAGES_PATH = RES_PATH / 'images/{}_{}.png'
+    IMAGES_PATH = RES_PATH / 'images/{}_{}.gif'
     ANIMATIONS_PATH = RES_PATH / 'animations/gif_{}_{}.gif'
     VIDEO_PATH = RES_PATH / 'video/{}_{}.mp4'
     SLIDES = [['Desire:', 4], ['Fear:', 3]]
@@ -128,6 +128,7 @@ class NeuronWindow(Frame):
         # remove window border and put it on top
         self.master.overrideredirect(True)
         self.master.attributes('-topmost', True)
+        self.master.geometry('+{}+{}'.format(1920, 0))
 
         # exit on escape key press
         self.bind_all('<Escape>', self.exit)
