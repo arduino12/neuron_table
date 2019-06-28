@@ -29,7 +29,11 @@ class ControlsWindow(Toplevel):
     RES_PATH = BASIC_PATH / 'res'
     IMAGES_PATH = RES_PATH / 'images/{}_{}.gif'
     ANIMATIONS_PATH = RES_PATH / 'animations/gif_{}_{}.gif'
-    VIDEO_PATH = RES_PATH / 'video/{}_{}.mp4'
+    VIDEO_PATH = RES_PATH / 'video/{}.mp4'
+    VIDEO_JUMP = 'jump'
+    VIDEO_GIVE_UP = 'give_up'
+    VIDEO_HESITATION = 'hesitation'
+    VIDEO_INSTRUCTIONS = 'instructions'
     SLIDES = [['Desire:', 4], ['Fear:', 3]]
     PADS = {'padx': 5, 'pady': 5}
     LEFT_OFFSET = 10
@@ -66,11 +70,31 @@ class ControlsWindow(Toplevel):
 
         self.images = []
         self.animations = []
-        self.vlc_instance = vlc.Instance()
-        self.player = self.vlc_instance.media_player_new()
-        self.videos = []
         self.load_media()
         self.gif_player = GifPlayer(self.neuron)
+
+        self.vlc_instance = vlc.get_default_instance()
+
+        ml = self.vlc_instance.media_list_new()
+        for i in (self.VIDEO_HESITATION, self.VIDEO_INSTRUCTIONS):
+            ml.add_media(str(self.VIDEO_PATH).format(i))
+        self.vlc_idle_list_player = self.vlc_instance.media_list_player_new()
+        self.vlc_idle_list_player.set_media_list(ml)
+        self.vlc_idle_list_player.set_playback_mode(vlc.PlaybackMode.loop)
+
+        ml = self.vlc_instance.media_list_new()
+        for i in (self.VIDEO_JUMP, self.VIDEO_GIVE_UP):
+            ml.add_media(str(self.VIDEO_PATH).format(i))
+        self.vlc_decide_list_player = self.vlc_instance.media_list_player_new()
+        self.vlc_decide_list_player.set_media_list(ml)
+
+        em = self.vlc_decide_list_player.get_media_player().event_manager()
+        em.event_attach(vlc.EventType.MediaPlayerEndReached, self.vlc_decide_list_player_media_end)
+
+        for i in (self.vlc_idle_list_player, self.vlc_decide_list_player):
+            i.get_media_player().set_fullscreen(True)
+
+        self.vlc_play_idle()
         self.decide_command()
 
         pygame.init()
@@ -101,13 +125,10 @@ class ControlsWindow(Toplevel):
     def load_media(self):
         self.images.clear()
         self.animations.clear()
-        self.videos.clear()
         for i in range(self.SLIDES[0][1]):
             for j in range(self.SLIDES[1][1]):
                 self.images.append(Gif(str(self.IMAGES_PATH).format(i, j)))
                 self.animations.append(Gif(str(self.ANIMATIONS_PATH).format(i, j)))
-                # self.videos.append(str(self.VIDEO_PATH).format(i, j))
-                self.videos.append(self.vlc_instance.media_new(str(self.VIDEO_PATH).format(i, j)))
 
     def decide_command(self):
         if self.gif_player.play_count:
@@ -115,14 +136,25 @@ class ControlsWindow(Toplevel):
         self.gif_player.play(
             self.animations[Slide.get_values()], after_cb=self.slide_command)
 
+        if self.vlc_idle_list_player.is_playing():
+            self.vlc_idle_list_player.stop()
+            if self.slides[0].get_value() - self.slides[1].get_value() >= 2:
+                self.vlc_decide_list_player.play_item_at_index(0)
+            else:
+                self.vlc_decide_list_player.play_item_at_index(1)
+
     def slide_command(self, *_, **__):
         if self.gif_player.play_count:
             return
         self.gif_player.play(self.images[Slide.get_values()])
-        # os.popen(self.videos[Slide.get_values()])
-        self.player.set_media(self.videos[Slide.get_values()])
-        self.player.play()
 
+    def vlc_decide_list_player_media_end(self, _):
+        # cant call self.vlc_decide_list_player.stop() from here so call it later
+        self.after(0, self.vlc_play_idle)
+
+    def vlc_play_idle(self):
+        self.vlc_decide_list_player.stop()
+        self.vlc_idle_list_player.play()
 
 class NeuronWindow(Frame):
     DISPLAY_SIZE = 448
