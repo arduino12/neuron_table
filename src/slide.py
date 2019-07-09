@@ -1,9 +1,7 @@
-# import tkinter
 from tkinter import *
 
 
 class Slide(LabelFrame):
-
     RADIO_BUTTONS_TEXT = ['Small', 'Medium', 'Big', 'Large']
     PADS = {'padx': 5, 'pady': 5}
     SLIDES = []

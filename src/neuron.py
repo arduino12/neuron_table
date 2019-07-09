@@ -28,8 +28,8 @@ class ControlsWindow(Toplevel):
     WINDOW_TITLE = 'Neuron V1.0.0'
     RES_PATH = BASIC_PATH / 'res'
     IMAGES_PATH = RES_PATH / 'images/{}_{}.gif'
-    ANIMATIONS_PATH = RES_PATH / 'animations/gif_{}_{}.gif'
-    VIDEO_PATH = RES_PATH / 'video/{}.mp4'
+    ANIMATIONS_PATH = RES_PATH / 'animations/{}_{}.gif'
+    VIDEO_PATH = RES_PATH / 'videos/{}.mp4'
     VIDEO_JUMP = 'jump'
     VIDEO_GIVE_UP = 'give_up'
     VIDEO_HESITATION = 'hesitation'
@@ -155,6 +155,7 @@ class ControlsWindow(Toplevel):
     def vlc_play_idle(self):
         self.vlc_decide_list_player.stop()
         self.vlc_idle_list_player.play()
+
 
 class NeuronWindow(Frame):
     DISPLAY_SIZE = 448

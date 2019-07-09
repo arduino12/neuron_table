@@ -1,5 +1,5 @@
 from tkinter import *
-from PIL import Image, ImageTk, ImageDraw, ImageColor
+from PIL import Image, ImageTk, ImageDraw
 
 
 class Gif(object):
@@ -8,7 +8,7 @@ class Gif(object):
     CROSS_COLOR = (128, 128, 128)
     CROSS_WIDTH = 3
 
-    def __init__(self, file_name, mode='RGBA'):
+    def __init__(self, file_name, mode=MODE):
         try:
             animation = Image.open(file_name)
         except FileNotFoundError:
