@@ -8,7 +8,6 @@ if sys.platform.startswith('win'):
     os.environ['PATH'] += r';C:\Program Files\VideoLAN\VLC'
 import vlc
 
-
 # add BASIC_PATH (GitHub clones path) to PYTHONPATH
 BASIC_PATH = os.path.abspath(os.path.dirname(os.path.dirname(
     os.path.realpath(__file__))))
@@ -32,7 +31,6 @@ class ControlsWindow(Toplevel):
     VIDEO_PATH = RES_PATH / 'videos/{}.mp4'
     VIDEO_JUMP = 'jump'
     VIDEO_GIVE_UP = 'give_up'
-    VIDEO_HESITATION = 'hesitation'
     VIDEO_INSTRUCTIONS = 'instructions'
     SLIDES = [['Desire:', 4], ['Fear:', 3]]
     PADS = {'padx': 5, 'pady': 5}
@@ -70,32 +68,17 @@ class ControlsWindow(Toplevel):
 
         self.images = []
         self.animations = []
+
+        self.vlc_is_idle_media = True
+        self.vlc_instance = vlc.get_default_instance()
+        self.vlc_list_player = self.vlc_instance.media_list_player_new()
+        mp = self.vlc_list_player.get_media_player()
+        mp.set_fullscreen(True)
+        mp.event_manager().event_attach(vlc.EventType.MediaPlayerEndReached, self.vlc_media_end)
+
         self.load_media()
         self.gif_player = GifPlayer(self.neuron)
-
-        self.vlc_instance = vlc.get_default_instance()
-
-        ml = self.vlc_instance.media_list_new()
-        for i in (self.VIDEO_HESITATION, self.VIDEO_INSTRUCTIONS):
-            ml.add_media(str(self.VIDEO_PATH).format(i))
-        self.vlc_idle_list_player = self.vlc_instance.media_list_player_new()
-        self.vlc_idle_list_player.set_media_list(ml)
-        self.vlc_idle_list_player.set_playback_mode(vlc.PlaybackMode.loop)
-
-        ml = self.vlc_instance.media_list_new()
-        for i in (self.VIDEO_JUMP, self.VIDEO_GIVE_UP):
-            ml.add_media(str(self.VIDEO_PATH).format(i))
-        self.vlc_decide_list_player = self.vlc_instance.media_list_player_new()
-        self.vlc_decide_list_player.set_media_list(ml)
-
-        em = self.vlc_decide_list_player.get_media_player().event_manager()
-        em.event_attach(vlc.EventType.MediaPlayerEndReached, self.vlc_decide_list_player_media_end)
-
-        for i in (self.vlc_idle_list_player, self.vlc_decide_list_player):
-            i.get_media_player().set_fullscreen(True)
-
         self.vlc_play_idle()
-        self.decide_command()
 
         pygame.init()
         pygame.joystick.init()
@@ -130,31 +113,36 @@ class ControlsWindow(Toplevel):
                 self.images.append(Gif(str(self.IMAGES_PATH).format(i, j)))
                 self.animations.append(Gif(str(self.ANIMATIONS_PATH).format(i, j)))
 
+        ml = self.vlc_instance.media_list_new()
+        for i in (self.VIDEO_INSTRUCTIONS, self.VIDEO_JUMP, self.VIDEO_GIVE_UP):
+            ml.add_media(str(self.VIDEO_PATH).format(i))
+        self.vlc_list_player.set_media_list(ml)
+
     def decide_command(self):
         if self.gif_player.play_count:
             return
         self.gif_player.play(
             self.animations[Slide.get_values()], after_cb=self.slide_command)
 
-        if self.vlc_idle_list_player.is_playing():
-            self.vlc_idle_list_player.stop()
+        if self.vlc_is_idle_media:
+            self.vlc_is_idle_media = False
             if self.slides[0].get_value() - self.slides[1].get_value() >= 2:
-                self.vlc_decide_list_player.play_item_at_index(0)
+                self.vlc_list_player.play_item_at_index(1)
             else:
-                self.vlc_decide_list_player.play_item_at_index(1)
+                self.vlc_list_player.play_item_at_index(2)
 
     def slide_command(self, *_, **__):
         if self.gif_player.play_count:
             return
         self.gif_player.play(self.images[Slide.get_values()])
 
-    def vlc_decide_list_player_media_end(self, _):
+    def vlc_media_end(self, _):
         # cant call self.vlc_decide_list_player.stop() from here so call it later
-        self.after(0, self.vlc_play_idle)
+        self.after(10, self.vlc_play_idle)
 
     def vlc_play_idle(self):
-        self.vlc_decide_list_player.stop()
-        self.vlc_idle_list_player.play()
+        self.vlc_is_idle_media = True
+        self.vlc_list_player.play_item_at_index(0)
 
 
 class NeuronWindow(Frame):
