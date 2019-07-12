@@ -62,6 +62,7 @@ class GifPlayer(object):
     def _play(self):
         if self.play_count == 0:
             return
+        self.canvas.delete(ALL)
         self.canvas.create_image(0, 0, anchor=NW, image=self.current_gif.frames[self.current_frame])
 
         self.current_frame += 1
